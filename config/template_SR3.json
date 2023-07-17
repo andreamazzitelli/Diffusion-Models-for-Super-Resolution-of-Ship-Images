@@ -1,0 +1,111 @@
+{
+    "name": "sr3_ship_100k_4x",
+    "phase": "train", // train or val
+    "gpu_ids": [0, 1],
+
+
+    "path": { // set paths for where to save logs and results
+        "log": "logs",
+        "tb_logger": "tb_logger", // logs for tensorboard
+        "results": "results",
+        "checkpoint": "checkpoint",
+        "resume_state": null
+        // "resume_state": "experiments/distributed_high_sr_ffhq_210901_121212/checkpoint/I830000_E32" //pretrain model or training state
+    },
+
+
+    "datasets": {
+
+        "train": {
+            "name": "Ship Test Train",
+            "mode": "LRHR", // whether need LR 
+            "dataroot": "", // route where to find the images, there should be 3 subdirectories. Use prepare data script to be sure.
+            "datatype": "img", //lmdb or img, path of img files --> Forse bisognerebbe preferire LMDB.
+            "l_resolution": 64, // low resolution need to super_resolution
+            "r_resolution": 512, // high resolution
+            "batch_size": 16, //sarebbe da testare vari valori
+            "num_workers": 8,
+            "use_shuffle": true,
+            "data_len": -1 // -1 represents all data used in train. This is then updated in the code so is ok for it to be -1
+        },
+
+        "val": {
+            "name": "Ship Test Validation",
+            "mode": "LRHR",
+            "dataroot": "",
+            "datatype": "img", //lmdb or img, path of img files
+            "l_resolution": 64,
+            "r_resolution": 512,
+            "data_len": -1// se voglio considerare tutto il validation set metto - 1 altrimenti metto un valore intero
+        }
+    },
+
+
+
+    "model": {
+
+        "which_model_G": "sr3",
+        "finetune_norm": false,
+
+        "unet": {
+            "in_channel": 6,
+            "out_channel": 3,
+            "inner_channel": 64,
+            "norm_groups": 16,
+            "channel_multiplier": [
+                1,
+                2,
+                4,
+                8,
+                // 8,
+                // 16,
+                16
+            ],
+            "attn_res": [
+                // 16
+            ],
+            "res_blocks": 1,
+            "dropout": 0
+        },
+        
+        "beta_schedule": { // use munual beta_schedule for acceleration
+
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
+        },
+
+
+        "diffusion": {
+            "image_size": 256,
+            "channels": 3, //sample channel
+            "conditional": true // unconditional generation or unconditional generation(super_resolution)
+        }
+    },
+    
+    "train": {
+        "n_iter": 1000000,
+        "val_freq": 1e4,
+        "save_checkpoint_freq": 1e4,
+        "print_freq": 50,
+        "optimizer": {
+            "type": "adam",
+            "lr": 3e-6
+        },
+        "ema_scheduler": { // not used now
+            "step_start_ema": 5000,
+            "update_ema_every": 1,
+            "ema_decay": 0.9999
+        }
+    }
+}
